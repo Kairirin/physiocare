@@ -167,7 +167,7 @@ async function loadData() {
 }
 
 // Connect to MongoDB database
-mongoose.connect('mongodb://localhost:27017/physiocare')
+mongoose.connect(process.env.DATABASE_URL)
   .then(() => {
     console.log('Successful connection to MongoDB');
     loadData();
