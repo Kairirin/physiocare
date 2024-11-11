@@ -37,9 +37,9 @@ router.get("/find", (req, res) => {
         });
 });
 
-//GET POR ID DE EXPEDIENTE
+//GET POR ID DE PACIENTE
 router.get("/:id", (req, res) => {
-    Record.findById(req.params.id)
+    Record.find({patient: req.params.id})
         .populate("patient")
         .then(result => {
             if(result)
