@@ -1,16 +1,21 @@
 const express = require("express");
+const bcrypt = require('bcrypt');
+const { protegerRuta, accesoId } = require("../auth/auth");
+const auth = require(__dirname + "/auth.js");
+let User = require(__dirname + "/../models/users.js");
 let Patient = require(__dirname + "/../models/patient.js");
 
 let router = express.Router();
 
 //GET
-router.get("/", (req, res) => {
+router.get("/", protegerRuta(["admin", "physio"]), (req, res) => {
   Patient.find()
     .then((result) => {
-      if (result) 
-        res.status(200).send({ ok: true, result: result });
-      else 
-        res.status(404).send({ ok: false, error: "No se ha encontrado el paciente" });
+      if (result) res.status(200).send({ ok: true, result: result });
+      else
+        res
+          .status(404)
+          .send({ ok: false, error: "No se ha encontrado el paciente" });
     })
     .catch((error) => {
       res.status(500).send({ ok: false, error: "Internal server error" });
@@ -18,15 +23,17 @@ router.get("/", (req, res) => {
 });
 
 //GET APELLIDOS
-router.get("/find", (req, res) => {
+router.get("/find", protegerRuta(["admin", "physio"]), (req, res) => {
   Patient.find({
-    surname: { $regex: req.query.surname, $options: "i" }
+    surname: { $regex: req.query.surname, $options: "i" },
   })
     .then((result) => {
-      if (result)
-        res.status(200).send({ ok: true, result: result });
-      else 
-        res.status(404).send({ ok: false, error: "No se han encontrado pacientes con esos criterios" });
+      if (result) res.status(200).send({ ok: true, result: result });
+      else
+        res.status(404).send({
+          ok: false,
+          error: "No se han encontrado pacientes con esos criterios",
+        });
     })
     .catch((error) => {
       res.status(500).send({ ok: false, error: error });
@@ -34,39 +41,64 @@ router.get("/find", (req, res) => {
 });
 
 //GET ESPECÍFICO
-router.get("/:id", (req, res) => {
-  Patient.findById(req.params.id)
-    .then((result) => {
-      if (result)
-        res.status(200).send({ ok: true, result: result });
-      else 
-        res.status(404).send({ ok: false, error: "No se ha encontrado el paciente" });
-    })
-    .catch((error) => {
-      res.status(500).send({ ok: false, error: "Internal server error" });
-    });
-});
+router.get("/:id", [protegerRuta(["admin", "physio"], accesoId)],(req, res) => {
+    Patient.findById(req.params.id)
+      .then((result) => {
+        if (result) res.status(200).send({ ok: true, result: result });
+        else
+          res
+            .status(404)
+            .send({ ok: false, error: "No se ha encontrado el paciente" });
+      })
+      .catch((error) => {
+        res.status(500).send({ ok: false, error: "Internal server error" });
+      });
+  }
+);
 
 //POST PACIENTE
-router.post("/", (req, res) => {
-  let patient = new Patient({
-    name: req.body.name,
-    surname: req.body.surname,
-    birthDate: new Date(req.body.birthDate),
-    address: req.body.address,
-    insuranceNumber: req.body.insuranceNumber
+router.post("/", protegerRuta(["admin", "physio"]), (req, res) => {
+  let idUser;
+  const saltRounds = 10;
+  const hash = bcrypt.hashSync(req.body.password, saltRounds);
+
+  let newUser = new User({
+    login: req.body.login,
+    password: hash,
+    rol: "patient",
   });
-  patient.save()
+
+  newUser
+    .save()
     .then((result) => {
-      res.status(201).send({ ok: true, result: result });
+      idUser = result._id;
+
+      let patient = new Patient({
+        _id: idUser,
+        name: req.body.name,
+        surname: req.body.surname,
+        birthDate: req.body.birthDate,
+        address: req.body.address,
+        insuranceNumber: req.body.insuranceNumber,
+      });
+      patient
+        .save()
+        .then((result) => {
+          res.status(201).send({ ok: true, result: result });
+        })
+        .catch((error) => {
+          res
+            .status(400)
+            .send({ ok: false, error: "Error guardando paciente" });
+        });
     })
     .catch((error) => {
-      res.status(400).send({ ok: false, error: "Error guardando paciente" });
+      res.status(400).send({ ok: false, error: cryptPasswd/* "Error guardando usuario" */ });
     });
 });
 
 //PUT PACIENTE
-router.put("/:id", (req, res) => {
+router.put("/:id", protegerRuta(["admin", "physio"]), (req, res) => {
   Patient.findByIdAndUpdate(
     req.params.id,
     {
@@ -76,14 +108,17 @@ router.put("/:id", (req, res) => {
         birthDate: new Date(req.body.birthDate),
         address: req.body.address,
         insuranceNumber: req.body.insuranceNumber,
-      }
+      },
     },
     { new: true, runValidators: true }
   )
     .then((result) => {
       if (result) res.status(200).send({ ok: true, result: result });
       else
-        res.status(400).send({ ok: false, error: "Error actualizando los datos del paciente" });
+        res.status(400).send({
+          ok: false,
+          error: "Error actualizando los datos del paciente",
+        });
     })
     .catch((error) => {
       res.status(500).send({ ok: false, error: "Internal server error" });
@@ -91,12 +126,19 @@ router.put("/:id", (req, res) => {
 });
 
 //DELETE PATIENT
-router.delete("/:id", (req, res) => {
+router.delete("/:id", protegerRuta(["admin", "physio"]), (req, res) => {
   Patient.findByIdAndDelete(req.params.id)
     .then((result) => {
-      if (result) res.status(200).send({ ok: true, result: result });
+      if (result){
+        User.findByIdAndDelete(req.params.id)
+        .then((resultUser) => {
+          res.status(200).send({ ok: true, result: resultUser });
+        });
+      } 
       else
-        res.status(404).send({ ok: false, error: "El paciente a eliminar no existe" });
+        res
+          .status(404)
+          .send({ ok: false, error: "El paciente a eliminar no existe" });
     })
     .catch((error) => {
       res.status(500).send({ ok: false, error: "Internal server error" });

@@ -1,11 +1,12 @@
 const express = require("express");
 let { Record, Appointment } = require(__dirname + "/../models/record.js");
 let Patient = require(__dirname + "/../models/patient.js");
+const { protegerRuta, accesoId } = require("../auth/auth");
 
 let router = express.Router();
 
 //GET
-router.get("/", (req, res) => {
+router.get("/", protegerRuta(["admin", "physio"]), (req, res) => {
     Record.find()
         .populate("patient")
         .then((result) => {
@@ -20,7 +21,7 @@ router.get("/", (req, res) => {
 });
 
 //GET POR APELLIDO DE PACIENTE
-router.get("/find", (req, res) => {
+router.get("/find", protegerRuta(["admin", "physio"]), (req, res) => {
     Patient.find({ surname: req.query.surname })
         .then(resultadoPaciente => {
             let idPacientes = resultadoPaciente.map(p => p.id);
@@ -38,7 +39,7 @@ router.get("/find", (req, res) => {
 });
 
 //GET POR ID DE PACIENTE
-router.get("/:id", (req, res) => {
+router.get("/:id", protegerRuta(["admin", "physio"]) || accesoId() , (req, res) => {
     Record.find({patient: req.params.id})
         .populate("patient")
         .then(result => {
@@ -52,7 +53,7 @@ router.get("/:id", (req, res) => {
 });
 
 //POST EXPEDIENTE
-router.post("/", (req, res) => {
+router.post("/", protegerRuta(["admin", "physio"]), (req, res) => {
     Patient.findById(req.body.id)
         .then(result => {
             if(result){
@@ -75,11 +76,10 @@ router.post("/", (req, res) => {
         }).catch(error => {
             res.status(500).send({ ok: false, error: "Internal server error" });
         })
-    
   });
 
-//AÑADIR CONSULTAS A UN EXPEDIENTE
-router.post('/:id/appointments', (req, res) => {
+//AÑADIR CONSULTAS A UN EXPEDIENTE (POR ID PACIENTE)
+router.post('/:id/appointments', protegerRuta(["admin", "physio"]), (req, res) => {
     let appointment = new Appointment ({
         date: new Date(req.body.date),
         physio: req.body.physio,
@@ -87,7 +87,8 @@ router.post('/:id/appointments', (req, res) => {
         treatment: req.body.treatment,
         observations: req.body.observations
     });
-    Record.findByIdAndUpdate(req.params.id, 
+    //Record.findByIdAndUpdate(req.params.id, 
+    Record.findOneAndUpdate({patient: req.params.id},
     {
         $push: {appointments: appointment} }, {new: true}
     )
@@ -101,9 +102,9 @@ router.post('/:id/appointments', (req, res) => {
     })
 })
 
-//DELETE
-router.delete("/:id", (req, res) => {
-    Record.findByIdAndDelete(req.params.id)
+//DELETE (POR ID PACIENTE)
+router.delete("/:id", protegerRuta(["admin", "physio"]), (req, res) => {
+    Record.findOneAndDelete({patient: req.params.id})
     .populate("patient")
       .then((result) => {
         if (result) res.status(200).send({ ok: true, result: result });

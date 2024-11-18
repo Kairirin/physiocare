@@ -1,10 +1,14 @@
 const express = require("express");
+const bcrypt = require('bcrypt');
 let Physio = require(__dirname + "/../models/physio.js");
+let User = require(__dirname + "/../models/users.js");
+const { protegerRuta } = require("../auth/auth");
+
 
 let router = express.Router();
 
 //GET
-router.get("/", (req, res) => {
+router.get("/", protegerRuta(["admin", "physio", "patient"]), (req, res) => {
   Physio.find()
     .then((result) => {
       if (result) 
@@ -18,7 +22,7 @@ router.get("/", (req, res) => {
 });
 
 //GET ESPECIALIDAD
-router.get("/find", (req, res) => {
+router.get("/find", protegerRuta(["admin", "physio", "patient"]), (req, res) => {
   Physio.find({ specialty: req.query.specialty })
     .then((result) => {
       if (result) 
@@ -32,7 +36,7 @@ router.get("/find", (req, res) => {
 });
 
 //GET ESPECÍFICO
-router.get("/:id", (req, res) => {
+router.get("/:id", protegerRuta(["admin", "physio", "patient"]), (req, res) => {
   Physio.findById(req.params.id)
     .then((result) => {
       if (result)
@@ -46,24 +50,41 @@ router.get("/:id", (req, res) => {
 });
 
 //POST FISIO
-router.post("/", (req, res) => {
-  let physio = new Physio({
-    name: req.body.name,
-    surname: req.body.surname,
-    specialty: req.body.specialty,
-    licenseNumber: req.body.licenseNumber
+router.post("/", protegerRuta(["admin"]), (req, res) => {
+  let idUser;
+  const saltRounds = 10;
+  const hash = bcrypt.hashSync(req.body.password, saltRounds);
+
+
+  let newUser = new User({
+    login: req.body.login,
+    password: hash,
+    rol: "physio",
   });
-  physio.save()
+
+  newUser.save()
     .then((result) => {
-      res.status(201).send({ ok: true, result: result });
-    })
-    .catch((error) => {
-      res.status(400).send({ ok: false, error: "Error guardando fisio" });
+      idUser = result._id;
+      
+      let physio = new Physio({
+        _id: idUser,
+        name: req.body.name,
+        surname: req.body.surname,
+        specialty: req.body.specialty,
+        licenseNumber: req.body.licenseNumber
+      });
+      physio.save()
+        .then((result) => {
+          res.status(201).send({ ok: true, result: result });
+        })
+        .catch((error) => {
+          res.status(400).send({ ok: false, error: "Error guardando fisio" });
+        });
     });
 });
 
 //PUT FISIO
-router.put("/:id", (req, res) => {
+router.put("/:id", protegerRuta(["admin"]), (req, res) => {
   Physio.findByIdAndUpdate(
     req.params.id,
     {
@@ -87,10 +108,15 @@ router.put("/:id", (req, res) => {
 });
 
 //DELETE FISIO
-router.delete("/:id", (req, res) => {
+router.delete("/:id", protegerRuta(["admin"]), (req, res) => {
   Physio.findByIdAndDelete(req.params.id)
     .then((result) => {
-      if (result) res.status(200).send({ ok: true, result: result });
+      if (result){
+        User.findByIdAndDelete(req.params.id)
+        .then((resultUser) => {
+          res.status(200).send({ ok: true, result: resultUser });
+        });
+      } 
       else
         res.status(404).send({ ok: false, error: "El fisio a eliminar no existe" });
     })
