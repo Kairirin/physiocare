@@ -16,9 +16,9 @@ router.post("/login", (req, res) => {
                 let existe = result.filter(u => u.login == login);
 
                 if(existe.length === 1 && bcrypt.compareSync(password, existe[0].password))
-                    res.send({ok: true, token: auth.generarToken(existe[0]._id, existe[0].login, existe[0].rol)});
+                    res.status(200).send({result: auth.generarToken(existe[0]._id, existe[0].login, existe[0].rol)});
                 else 
-                    res.send({ok: false, result: "Usuario o contraseña no válidos"});
+                    res.status(401).send({error: "Usuario o contraseña no válidos"});
             }
         }).catch(() => {})
 })

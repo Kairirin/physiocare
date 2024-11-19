@@ -11,12 +11,12 @@ router.get("/", protegerRuta(["admin", "physio"]), (req, res) => {
         .populate("patient")
         .then((result) => {
             if(result)
-                res.status(200).send({ok: true, result: result});
+                res.status(200).send({ result: result});
             else 
-                res.status(404).send({ok: false, error: "No se encontraron expedientes en el sistema" });
+                res.status(404).send({ error: "No se encontraron expedientes en el sistema" });
         })
         .catch((error) => {
-            res.status(500).send({ok: false, error: "Internal server error"});
+            res.status(500).send({ error: "Internal server error"});
         });
 });
 
@@ -29,52 +29,52 @@ router.get("/find", protegerRuta(["admin", "physio"]), (req, res) => {
                 .populate("patient")
                 .then(result => {
                     if(result)
-                        res.status(200).send({ok: true, result: result});
+                        res.status(200).send({ result: result});
                     else 
-                        res.status(404).send({ ok: false, error: "No se encontraron expedientes" });
+                        res.status(404).send({ error: "No se encontraron expedientes" });
                 })
         }).catch((error) => {
-            res.status(500).send({ok: false, error: "Internal server error"});
+            res.status(500).send({ error: "Internal server error"});
         });
 });
 
 //GET POR ID DE PACIENTE
-router.get("/:id", protegerRuta(["admin", "physio"]) || accesoId() , (req, res) => {
+router.get("/:id", protegerRuta(["admin", "physio", "patient"]), accesoId() , (req, res) => {
     Record.find({patient: req.params.id})
         .populate("patient")
         .then(result => {
             if(result)
-                res.status(200).send({ ok: true, result: result });
+                res.status(200).send({ result: result });
             else 
-                res.status(404).send({ ok: false, error: "No se ha encontrado el expediente" });
+                res.status(404).send({ error: "No se ha encontrado el expediente" });
         }).catch((error) => {
-            res.status(500).send({ok: false, error: "Internal server error"});
+            res.status(500).send({ error: "Internal server error"});
         });
 });
 
 //POST EXPEDIENTE
 router.post("/", protegerRuta(["admin", "physio"]), (req, res) => {
-    Patient.findById(req.body.id)
+    Patient.findById(req.body.patient)
         .then(result => {
             if(result){
                 let record = new Record({
-                    patient: result.id,
+                    patient: result._id,
                     medicalRecord: req.body.medicalRecord,
                     appointments: []
                 });
                 record
                   .save()
                   .then((result) => {
-                    res.status(201).send({ ok: true, result: result });
+                    res.status(201).send({ result: result });
                   })
                   .catch((error) => {
-                    res.status(400).send({ ok: false, error: "Error guardando expediente" });
+                    res.status(400).send({ error: "Error guardando expediente" });
                   });
             }
             else
-                res.status(404).send({ok: false, error: "No se ha encontrado paciente con esa ID"});
+                res.status(404).send({ error: "No se ha encontrado paciente con esa ID"});
         }).catch(error => {
-            res.status(500).send({ ok: false, error: "Internal server error" });
+            res.status(500).send({ error: "Internal server error" });
         })
   });
 
@@ -94,11 +94,11 @@ router.post('/:id/appointments', protegerRuta(["admin", "physio"]), (req, res) =
     )
     .then(result => {
         if (result)
-            res.status(201).send({ ok: true, result: result });
+            res.status(201).send({ result: result });
         else
-            res.status(404).send({ ok: false, error: "Fallo en la inserción" });
+            res.status(404).send({ error: "Fallo en la inserción" });
     }).catch(error => {
-        res.status(500).send({ok: false, error: "Internal server error"});
+        res.status(500).send({ error: "Internal server error"});
     })
 })
 
@@ -107,12 +107,12 @@ router.delete("/:id", protegerRuta(["admin", "physio"]), (req, res) => {
     Record.findOneAndDelete({patient: req.params.id})
     .populate("patient")
       .then((result) => {
-        if (result) res.status(200).send({ ok: true, result: result });
+        if (result) res.status(200).send({ result: result });
         else
-          res.status(404).send({ ok: false, error: "El expediente a eliminar no existe" });
+          res.status(404).send({  error: "El expediente a eliminar no existe" });
       })
       .catch((error) => {
-        res.status(500).send({ ok: false, error: "Internal server error" });
+        res.status(500).send({ error: "Internal server error" });
       });
   });
 

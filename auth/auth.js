@@ -22,29 +22,29 @@ let protegerRuta = (rol) => {
         if(result && (rol == "" || rol.some(r => r == result.rol)))
             next();
         else    
-            res.status(403)
-                .send({ ok: false, error: "Acceso no autorizado 1" });
+            res.status(403).send({ error: "Acceso no autorizado" });
     }
     else 
-        res.send({ ok: false, error: "Usuario no encontrado 1" });
+        res.status(404).send({ error: "Usuario no encontrado" });
   };
 };
 
-let accesoId = (req, res, next) => {
+let accesoId = () => {
+ return (req, res, next) => {
     let token = req.headers["authorization"];
     if (token && token.startsWith("Bearer")) {
         let result = verificarToken(token.slice(7));
         let id= req.params.id;
 
-        if(result && (result.rol == "patient" && id == result.id))
-            next();
+        if(!result || (result.rol == "patient" && id != result.id))
+          res.status(403).send({ error: "Acceso no autorizado" });
         else    
-            res.status(403)
-                .send({ ok: false, error: "Acceso no autorizado 2" });
+          next();
     }
     else 
-        res.send({ ok: false, error: "Usuario no encontrado 2" });
+        res.status(404).send({ error: "Usuario no encontrado" });
   };
+}
 
 module.exports = {
   generarToken: generarToken,
