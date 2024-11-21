@@ -1,0 +1,26 @@
+{
+    "clientName": "Thunder Client",
+    "environmentName": "physioCare",
+    "environmentId": "fe84ff42-1172-4f03-8041-a949dc333f79",
+    "dateExported": "2024-11-11T17:37:29.405Z",
+    "version": "1.2",
+    "variables": [
+        {
+            "name": "idPatient",
+            "value": "67323e9e798f95d5b4a1702e"
+        },
+        {
+            "name": "idPhysio",
+            "value": "67323fcc798f95d5b4a17037"
+        },
+        {
+            "name": "idRecord",
+            "value": "6732403b798f95d5b4a1704d"
+        },
+        {
+            "name": "idPatientRecord",
+            "value": "671107e5d9a07348f151abd2"
+        }
+    ],
+    "ref": "-bUd8tgGyBQY35ygLHhVv0AqnhZikD0o-_yv8QXtsfQ1AcFo3sHLfIa4arj6fjQy"
+}
