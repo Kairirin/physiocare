@@ -98,7 +98,8 @@ router.put("/:id", protegerRuta(["admin", "physio"]), (req, res) => {
       $set: {
         name: req.body.name,
         surname: req.body.surname,
-        birthDate: new Date(req.body.birthDate),
+        birthDate: req.body.birthDate,
+        /* birthDate: new Date(req.body.birthDate), */
         address: req.body.address,
         insuranceNumber: req.body.insuranceNumber,
       }

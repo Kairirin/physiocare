@@ -62,8 +62,7 @@ router.post("/", protegerRuta(["admin", "physio"]), (req, res) => {
                     medicalRecord: req.body.medicalRecord,
                     appointments: []
                 });
-                record
-                  .save()
+                record.save()
                   .then((result) => {
                     res.status(201).send({ result: result });
                   })
@@ -81,7 +80,8 @@ router.post("/", protegerRuta(["admin", "physio"]), (req, res) => {
 //AÑADIR CONSULTAS A UN EXPEDIENTE (POR ID PACIENTE)
 router.post('/:id/appointments', protegerRuta(["admin", "physio"]), (req, res) => {
     let appointment = new Appointment ({
-        date: new Date(req.body.date),
+        /* date: new Date(req.body.date), */
+        date: req.body.date,
         physio: req.body.physio,
         diagnosis: req.body.diagnosis,
         treatment: req.body.treatment,
@@ -96,7 +96,7 @@ router.post('/:id/appointments', protegerRuta(["admin", "physio"]), (req, res) =
         if (result)
             res.status(201).send({ result: result });
         else
-            res.status(404).send({ error: "Fallo en la inserción" });
+            res.status(404).send({ error: "Fallo en la inserción" })
     }).catch(error => {
         res.status(500).send({ error: "Internal server error"});
     })
